@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Template de Carta TCG — Editável</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    background: #3a3f47;
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 30px 0 80px;
+  }
+  .toolbar {
+    max-width: 750px;
+    margin: 0 auto 24px;
+    background: #1c2128;
+    color: #d7dde3;
+    padding: 16px 20px;
+    border-radius: 10px;
+    text-align: center;
+  }
+  .toolbar button {
+    background: #22c3d6;
+    color: #0b0d10;
+    border: none;
+    padding: 10px 20px;
+    font-size: 15px;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+  .toolbar button:hover { background: #4fd8e8; }
+  .toolbar p { font-size: 13px; margin: 6px 0 0; color: #9aa3ac; }
+
+  .card {
+    width: 750px;
+    background: #0b0d10;
+    border-radius: 42px;
+    position: relative;
+    margin: 0 auto 30px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.5);
+    padding: 18px;
+  }
+  .card-inner {
+    height: 100%;
+    background: #12151a;
+    border: 5px solid #22c3d6;
+    border-radius: 30px;
+    padding: 40px 55px 50px;
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  [contenteditable="true"] {
+    outline: none;
+    border-radius: 4px;
+    transition: background .15s;
+  }
+  [contenteditable="true"]:hover { background: rgba(34,195,214,.12); }
+  [contenteditable="true"]:focus { background: rgba(34,195,214,.22); }
+
+  /* ===== FRENTE ===== */
+  .top-row { display:flex; justify-content:space-between; align-items:center; }
+  .type-badge {
+    display:inline-block; background:#0e1013; border:3px solid #22c3d6;
+    padding:8px 18px; font-size:22px; font-weight:bold; border-radius:6px;
+  }
+  .edition-code { font-size:18px; color:#8a939c; }
+
+  .image-box {
+    margin-top: 20px;
+    width: 100%;
+    height: 480px;
+    border-radius: 14px;
+    border: 3px dashed #3a4048;
+    background: #1c2128 center/cover no-repeat;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    cursor: pointer;
+    text-align:center; color:#5b6570; font-size:16px; padding:20px;
+  }
+  .image-box.has-image { border-style: solid; border-color:#22c3d6; color:transparent; }
+  .image-box small { display:block; margin-top:6px; font-size:13px; color:#4a525c; }
+
+  .name-plate {
+    margin-top: 22px;
+    background:#0e1013; border:3px solid #22c3d6; border-radius:14px;
+    padding: 16px; text-align:center;
+  }
+  .name-plate .name { font-family: Georgia, serif; font-size:44px; font-weight:bold; }
+
+  .tagline-box {
+    margin-top: 18px;
+    background:#161a20; border:2px solid #2c333c; border-radius:14px;
+    padding: 24px; text-align:center;
+  }
+  .tagline-box .tagline { font-family: Georgia, serif; font-style:italic; font-size:26px; color:#c9d3db; }
+
+  .footer-row {
+    margin-top: auto;
+    padding-top: 24px;
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:16px; color:#8a939c;
+  }
+
+  /* ===== VERSO ===== */
+  .title-bar {
+    background:#0e1013; border:3px solid #22c3d6; border-radius:12px;
+    padding:14px; text-align:center; margin-bottom: 18px;
+  }
+  .title-bar .title { font-family: Georgia, serif; font-size:26px; font-weight:bold; }
+
+  .section-header {
+    padding: 8px 14px; border-radius:8px; font-weight:bold; font-size:18px;
+    color:#0b0d10; margin: 16px 0 6px;
+  }
+  .section-header.personalidade { background:#22c3d6; }
+  .section-header.resenha { background:#ff8a5b; }
+  .section-header.academico { background:#f6cf65; }
+
+  .row {
+    display:flex; justify-content:space-between; gap: 12px;
+    padding: 3px 4px; font-size:15px; border-bottom: 1px dotted #262c33;
+  }
+  .row .label { color:#c9d3db; }
+  .row .value { color:#ffffff; font-weight:bold; text-align:right; white-space:nowrap; }
+
+  @page {
+    size: 750px 1050px;
+    margin: 0;
+  }
+
+  @media print {
+    html, body { background:#fff; padding:0; margin:0; }
+    .no-print { display:none !important; }
+    .card {
+      box-shadow:none; margin:0; width:750px; min-height:1050px;
+    }
+    #frente { page-break-after: always; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar no-print">
+  <div>Clique em qualquer texto da carta pra editar. Clique na área tracejada da frente pra subir a imagem.</div>
+  <button onclick="window.print()">🖨️ Imprimir / Salvar como PDF</button>
+  <button onclick="exportJSON()">📄 Exportar JSON</button>
+  <button onclick="exportCSV()">📊 Exportar CSV (planilha)</button>
+  <button onclick="downloadBothPNG()">🖼️ Baixar Frente + Verso (PNG)</button>
+  <button onclick="downloadBothSVG()">🧩 Baixar Frente + Verso (SVG)</button>
+  <p>No PDF, cada carta sai numa página do tamanho certo (frente e verso). JSON/CSV pegam nome, tipo, frase e todos os atributos pra usar no código do jogo. PNG/SVG baixam as duas faces como imagem, no mesmo tamanho.</p>
+</div>
+
+<!-- ===================== FRENTE ===================== -->
+<div class="card" id="frente">
+  <div class="card-inner">
+    <div class="top-row">
+      <span class="type-badge" contenteditable="true">PROFESSOR</span>
+      <span class="edition-code" contenteditable="true">Nº 001</span>
+    </div>
+
+    <div class="image-box" id="imageBox" onclick="document.getElementById('imgInput').click()">
+      COLOQUE A ARTE AQUI
+      <small>(clique pra escolher uma imagem do computador)</small>
+    </div>
+    <input type="file" id="imgInput" accept="image/*" style="display:none">
+
+    <div class="name-plate">
+      <div class="name" contenteditable="true">DS</div>
+    </div>
+
+    <div class="tagline-box">
+      <div class="tagline" contenteditable="true">"Já sonhou com este homem?"</div>
+    </div>
+
+    <div class="footer-row">
+      <span contenteditable="true">★ LR ★</span>
+      <span contenteditable="true">© 2026 SEU NOME</span>
+      <span contenteditable="true">UFCG-001</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== VERSO ===================== -->
+<div class="card" id="verso">
+  <div class="card-inner">
+    <div class="title-bar">
+      <div class="title" contenteditable="true">DS — Atributos</div>
+    </div>
+
+    <div class="section-header personalidade">Personalidade</div>
+    <div class="row"><span class="label" contenteditable="true">Inteligência</span><span class="value" contenteditable="true">90</span></div>
+    <div class="row"><span class="label" contenteditable="true">Criatividade</span><span class="value" contenteditable="true">76</span></div>
+    <div class="row"><span class="label" contenteditable="true">Carisma</span><span class="value" contenteditable="true">85</span></div>
+    <div class="row"><span class="label" contenteditable="true">Comunicação</span><span class="value" contenteditable="true">58</span></div>
+    <div class="row"><span class="label" contenteditable="true">Memória</span><span class="value" contenteditable="true">60</span></div>
+    <div class="row"><span class="label" contenteditable="true">Raciocínio</span><span class="value" contenteditable="true">92</span></div>
+    <div class="row"><span class="label" contenteditable="true">Conhecimento</span><span class="value" contenteditable="true">94</span></div>
+    <div class="row"><span class="label" contenteditable="true">Estratégia</span><span class="value" contenteditable="true">80</span></div>
+    <div class="row"><span class="label" contenteditable="true">Psicopatia</span><span class="value" contenteditable="true">70</span></div>
+    <div class="row"><span class="label" contenteditable="true">Loucura</span><span class="value" contenteditable="true">40</span></div>
+    <div class="row"><span class="label" contenteditable="true">Ragebait</span><span class="value" contenteditable="true">35</span></div>
+    <div class="row"><span class="label" contenteditable="true">Frase de Efeito</span><span class="value" contenteditable="true">93</span></div>
+    <div class="row"><span class="label" contenteditable="true">Capacidade de viver em sociedade</span><span class="value" contenteditable="true">80</span></div>
+    <div class="row"><span class="label" contenteditable="true">Trairagem</span><span class="value" contenteditable="true">50</span></div>
+
+    <div class="section-header resenha">Resenha</div>
+    <div class="row"><span class="label" contenteditable="true">Resenha</span><span class="value" contenteditable="true">60</span></div>
+    <div class="row"><span class="label" contenteditable="true">Caos</span><span class="value" contenteditable="true">80</span></div>
+    <div class="row"><span class="label" contenteditable="true">Vergonha</span><span class="value" contenteditable="true">60</span></div>
+    <div class="row"><span class="label" contenteditable="true">Aleatoriedade</span><span class="value" contenteditable="true">87</span></div>
+    <div class="row"><span class="label" contenteditable="true">Capacidade de gerar assunto</span><span class="value" contenteditable="true">94</span></div>
+    <div class="row"><span class="label" contenteditable="true">Potencial de meme</span><span class="value" contenteditable="true">95</span></div>
+    <div class="row"><span class="label" contenteditable="true">Chance de fazer merda</span><span class="value" contenteditable="true">80</span></div>
+    <div class="row"><span class="label" contenteditable="true">Poder de convencimento</span><span class="value" contenteditable="true">80</span></div>
+    <div class="row"><span class="label" contenteditable="true">Covardia</span><span class="value" contenteditable="true">40</span></div>
+    <div class="row"><span class="label" contenteditable="true">Pipocada</span><span class="value" contenteditable="true">30</span></div>
+    <div class="row"><span class="label" contenteditable="true">Vagabundagem</span><span class="value" contenteditable="true">20</span></div>
+    <div class="row"><span class="label" contenteditable="true">Fofura</span><span class="value" contenteditable="true">65</span></div>
+
+    <div class="section-header academico">Acadêmico</div>
+    <div class="row"><span class="label" contenteditable="true">Presença</span><span class="value" contenteditable="true">90</span></div>
+    <div class="row"><span class="label" contenteditable="true">Pontualidade</span><span class="value" contenteditable="true">70</span></div>
+    <div class="row"><span class="label" contenteditable="true">Notas</span><span class="value" contenteditable="true">Carta não pode ser usada</span></div>
+    <div class="row"><span class="label" contenteditable="true">Conhecimento acadêmico</span><span class="value" contenteditable="true">95</span></div>
+    <div class="row"><span class="label" contenteditable="true">Sobrevivência no semestre</span><span class="value" contenteditable="true">Carta não pode ser usada</span></div>
+    <div class="row"><span class="label" contenteditable="true">Conhecimento de SIGAA</span><span class="value" contenteditable="true">80</span></div>
+    <div class="row"><span class="label" contenteditable="true">Probabilidade de trancamento</span><span class="value" contenteditable="true">Carta não pode ser usada</span></div>
+  </div>
+</div>
+
+<script>
+  document.getElementById('imgInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      const box = document.getElementById('imageBox');
+      box.style.backgroundImage = `url(${ev.target.result})`;
+      box.classList.add('has-image');
+      box.innerHTML = '';
+    };
+    reader.readAsDataURL(file);
+  });
+
+  function getCardData() {
+    const nome = document.querySelector('.name-plate .name').innerText.trim();
+    const tipo = document.querySelector('.type-badge').innerText.trim();
+    const tagline = document.querySelector('.tagline').innerText.trim();
+    const atributos = {};
+    document.querySelectorAll('#verso .section-header').forEach(header => {
+      const categoria = header.innerText.trim();
+      const obj = {};
+      let el = header.nextElementSibling;
+      while (el && el.classList.contains('row')) {
+        const label = el.querySelector('.label').innerText.trim();
+        const rawValue = el.querySelector('.value').innerText.trim();
+        const numValue = Number(rawValue);
+        obj[label] = (rawValue !== '' && !isNaN(numValue)) ? numValue : rawValue;
+        el = el.nextElementSibling;
+      }
+      atributos[categoria] = obj;
+    });
+    return { nome, tipo, tagline, atributos };
+  }
+
+  function downloadFile(filename, content, mime) {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function exportJSON() {
+    const data = getCardData();
+    const safeName = (data.nome || 'carta').replace(/\s+/g, '_').toLowerCase();
+    downloadFile(safeName + '.json', JSON.stringify(data, null, 2), 'application/json');
+  }
+
+  function exportCSV() {
+    const data = getCardData();
+    const rows = [['categoria', 'atributo', 'valor']];
+    for (const categoria in data.atributos) {
+      for (const atributo in data.atributos[categoria]) {
+        rows.push([categoria, atributo, data.atributos[categoria][atributo]]);
+      }
+    }
+    const csv = rows
+      .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const safeName = (data.nome || 'carta').replace(/\s+/g, '_').toLowerCase();
+    downloadFile(safeName + '.csv', csv, 'text/csv;charset=utf-8;');
+  }
+  function equalizeCardHeights() {
+    const frente = document.getElementById('frente');
+    const verso = document.getElementById('verso');
+    frente.style.height = 'auto';
+    verso.style.height = 'auto';
+    // força o navegador a recalcular antes de medir
+    void frente.offsetHeight;
+    void verso.offsetHeight;
+    const maxH = Math.max(frente.offsetHeight, verso.offsetHeight);
+    frente.style.height = maxH + 'px';
+    verso.style.height = maxH + 'px';
+  }
+  window.addEventListener('load', equalizeCardHeights);
+  window.addEventListener('beforeprint', equalizeCardHeights);
+
+  function elementToCanvas(elementId) {
+    equalizeCardHeights();
+    const el = document.getElementById(elementId);
+    return html2canvas(el, { backgroundColor: null, scale: 2, useCORS: true });
+  }
+
+  function downloadImage(elementId, filename) {
+    elementToCanvas(elementId).then(canvas => {
+      canvas.toBlob(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      });
+    });
+  }
+
+  function downloadSVG(elementId, filename) {
+    elementToCanvas(elementId).then(canvas => {
+      const dataUrl = canvas.toDataURL('image/png');
+      const w = canvas.width;
+      const h = canvas.height;
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><image href="${dataUrl}" width="${w}" height="${h}"/></svg>`;
+      downloadFile(filename, svg, 'image/svg+xml');
+    });
+  }
+
+  function downloadBothPNG() {
+    const data = getCardData();
+    const base = (data.nome || 'carta').replace(/\s+/g, '_').toLowerCase();
+    downloadImage('frente', base + '_frente.png');
+    setTimeout(() => downloadImage('verso', base + '_verso.png'), 700);
+  }
+
+  function downloadBothSVG() {
+    const data = getCardData();
+    const base = (data.nome || 'carta').replace(/\s+/g, '_').toLowerCase();
+    downloadSVG('frente', base + '_frente.svg');
+    setTimeout(() => downloadSVG('verso', base + '_verso.svg'), 700);
+  }
+</script>
+
+</body>
+</html>
